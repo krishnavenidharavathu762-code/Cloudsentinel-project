@@ -1,1 +1,296 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CloudSentinel</title><link rel="stylesheet" href="/static/styles.css"></head><body><div class="shell"><aside class="sidebar"><div class="brand"><b>CloudSentinel</b><small>SECURITY WORKBENCH</small></div><nav><a href="#scanners">Scanners</a><a href="#history">History</a></nav></aside><main><header><p class="eyebrow">CLOUD SECURITY PLATFORM</p><h1>Security analysis, simplified.</h1><p>Inspect projects, source code, websites, images and Terraform files.</p></header><section class="stats"><article><small>SCANNERS</small><strong>10</strong></article><article><small>INPUT TYPES</small><strong>5</strong></article><article><small>MODE</small><strong>Static</strong></article></section><section id="scanners"><h2>Choose a scan</h2><div class="cards"><article class="scan-card"><h3>ZIP / Project</h3><form data-kind="project"><input type="file" name="file" accept=".zip" required><button>Analyze ZIP</button></form></article><article class="scan-card"><h3>Source Code</h3><form data-kind="code"><input type="file" name="file" required><button>Analyze Code</button></form></article><article class="scan-card"><h3>Website URL</h3><form data-kind="url"><input name="url" type="url" placeholder="https://example.com" required><button>Scan URL</button></form></article><article class="scan-card"><h3>Container Image</h3><form data-kind="image"><input name="image" placeholder="nginx:latest" required><button>Scan Image</button></form></article><article class="scan-card"><h3>Terraform</h3><form data-kind="terraform"><input type="file" name="file" accept=".tf,.tfvars" required><button>Scan Terraform</button></form></article></div></section><section id="results" class="hidden"><h2 id="result-title">Result</h2><button id="copy">Copy JSON</button><div id="result-body"></div></section><section id="history"><h2>Recent scans</h2><button id="refresh">Refresh</button><div id="history-list">Loading…</div></section><footer>Static analysis only; not a malware-free guarantee.</footer></main></div><div id="toast"></div><script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <title>CloudSentinel | Security Workbench</title>
+  <link rel="stylesheet" href="/static/styles.css?v=5">
+</head>
+<body>
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark">C</span>
+        <div>
+          <h1>CloudSentinel</h1>
+          <p>SECURITY INTELLIGENCE PLATFORM</p>
+        </div>
+      </div>
+
+      <div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
+
+      <section id="login-panel" class="auth-panel">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2>Sign in to your account</h2>
+        <form id="login-form">
+          <label for="login-email">Email address</label>
+          <input id="login-email" type="email" autocomplete="email" required>
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" autocomplete="current-password" required>
+          <button class="auth-primary" type="submit">Sign in</button>
+        </form>
+        <button type="button" class="auth-link" data-auth-show="forgot">Forgot password?</button>
+        <p class="auth-switch">New to CloudSentinel? <button type="button" class="auth-link" data-auth-show="register">Create an account</button></p>
+      </section>
+
+      <section id="register-panel" class="auth-panel" hidden>
+        <p class="eyebrow">GET STARTED</p>
+        <h2>Create your account</h2>
+        <form id="register-form">
+          <label for="register-email">Email address</label>
+          <input id="register-email" type="email" autocomplete="email" required>
+          <label for="register-password">Password (at least 12 characters)</label>
+          <input id="register-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+          <button class="auth-primary" type="submit">Create account</button>
+        </form>
+        <p class="auth-switch">Already registered? <button type="button" class="auth-link" data-auth-show="login">Sign in</button></p>
+      </section>
+
+      <section id="forgot-panel" class="auth-panel" hidden>
+        <p class="eyebrow">ACCOUNT RECOVERY</p>
+        <h2>Reset your password</h2>
+        <form id="forgot-form">
+          <label for="forgot-email">Account email address</label>
+          <input id="forgot-email" type="email" required>
+          <button class="auth-primary" type="submit">Send reset instructions</button>
+        </form>
+        <button type="button" class="auth-link" data-auth-show="login">Back to sign in</button>
+      </section>
+
+      <section id="reset-panel" class="auth-panel" hidden>
+        <p class="eyebrow">SECURE YOUR ACCOUNT</p>
+        <h2>Choose a new password</h2>
+        <form id="reset-form">
+          <label for="reset-token">Password-reset token</label>
+          <input id="reset-token" type="text" required>
+          <label for="reset-password">New password (at least 12 characters)</label>
+          <input id="reset-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+          <button class="auth-primary" type="submit">Update password</button>
+        </form>
+        <button type="button" class="auth-link" data-auth-show="login">Back to sign in</button>
+      </section>
+
+      <p class="auth-security-note">Your scan reports and connected GitHub account are kept separate from other users.</p>
+    </div>
+  </section>
+
+  <div class="shell" id="dashboard-shell" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">C</span><span><b>CloudSentinel</b><small>SECURITY WORKBENCH</small></span></a>
+      <nav aria-label="Main navigation">
+        <a href="#analytics"><span>▦</span> Analytics</a>
+        <a class="active" href="#scanners"><span>⌁</span> Scanners</a>
+        <a href="#history"><span>◷</span> History</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="online-dot"></span>
+        <span><b>API service</b><small id="api-status">Checking connection…</small></span>
+      </div>
+      <div class="account-controls">
+        <small>SIGNED IN AS</small>
+        <b id="account-email">—</b>
+        <button type="button" id="github-connect">Connect GitHub</button>
+        <button type="button" id="logout-button">Sign out</button>
+      </div>
+      <div class="version">CLOUDSENTINEL <span>v1.0.0</span></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div><p class="eyebrow">CLOUD SECURITY PLATFORM</p><h1>Security analysis, simplified.</h1><p class="intro">Inspect projects, source code, websites, images and Terraform files.</p></div>
+        <a class="new-scan" href="#scanners">＋ New scan</a>
+      </header>
+
+      <section class="status-banner"><span class="status-icon">✓</span><div><b>CloudSentinel workspace</b><p id="health-message">Checking API health…</p></div><span class="live-label"><i></i> LIVE</span></section>
+
+      <section class="stats">
+        <article><div class="stat-label">SCANNERS <span class="stat-symbol purple">⌁</span></div><strong>12</strong><small>Available analysis workflows</small></article>
+        <article><div class="stat-label">SAVED REPORTS <span class="stat-symbol blue">▤</span></div><strong id="stat-total">—</strong><small>Recent scan reports</small></article>
+        <article><div class="stat-label">HIGH / CRITICAL <span class="stat-symbol red">!</span></div><strong id="stat-high">—</strong><small>Reports in elevated risk categories</small></article>
+      </section>
+
+
+      <section id="analytics" class="analytics-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SECURITY INTELLIGENCE</p>
+            <h2>Security analytics</h2>
+            <p class="muted">Insights calculated from the latest saved scan reports.</p>
+          </div>
+          <span class="tag">LATEST 30 REPORTS</span>
+        </div>
+
+        <div class="analytics-stats">
+          <article class="analytics-card">
+            <span class="analytics-label">TOTAL FINDINGS</span>
+            <strong id="analytics-findings">—</strong>
+            <small>Across available reports</small>
+          </article>
+          <article class="analytics-card clickable-summary" role="button" tabindex="0" data-summary="open">
+            <span class="analytics-label">OPEN FINDINGS</span>
+            <strong id="analytics-open">—</strong>
+            <small>Awaiting remediation</small>
+          </article>
+          <article class="analytics-card clickable-summary" role="button" tabindex="0" data-summary="targets">
+            <span class="analytics-label">AFFECTED TARGETS</span>
+            <strong id="analytics-targets">—</strong>
+            <small>Distinct scanned targets with findings</small>
+          </article>
+          <article class="analytics-card clickable-summary" role="button" tabindex="0" data-summary="scanners">
+            <span class="analytics-label">SCANNERS USED</span>
+            <strong id="analytics-scanners">—</strong>
+            <small>Distinct scanner types in reports</small>
+          </article>
+        </div>
+
+        <div id="summary-details" class="summary-details" hidden>
+          <div class="summary-details-heading">
+            <h3 id="summary-details-title">Details</h3>
+            <button type="button" id="summary-details-close" class="cwe-close">Close</button>
+          </div>
+          <div id="summary-details-body"></div>
+        </div>
+
+        <div class="analytics-grid">
+          <article class="analytics-panel">
+            <h3>Severity distribution</h3>
+            <p class="muted">Findings grouped by reported severity.</p>
+            <div id="severity-chart" class="analytics-chart">
+              <p class="muted">Waiting for scan data…</p>
+            </div>
+          </article>
+
+          <article class="analytics-panel">
+            <h3>Scanner performance</h3>
+            <p class="muted">Finding counts grouped by scanner.</p>
+            <div id="scanner-chart" class="analytics-chart">
+              <p class="muted">Waiting for scan data…</p>
+            </div>
+          </article>
+
+          <article class="analytics-panel">
+            <h3>Top weakness categories</h3>
+            <p class="muted">Most frequently reported CWE identifiers.</p>
+            <div id="cwe-chart" class="analytics-chart">
+              <p class="muted">Waiting for scan data…</p>
+            </div>
+            <div id="cwe-details" class="cwe-details" hidden>
+              <div class="cwe-details-heading">
+                <h3 id="cwe-details-title">Weakness details</h3>
+                <button type="button" id="cwe-details-close" class="cwe-close">Close</button>
+              </div>
+              <div id="cwe-details-body"></div>
+            </div>
+          </article>
+
+        </div>
+
+        <p class="analytics-note">
+          Analytics are limited to the latest 30 reports returned by the API.
+          Missing severity or CWE values are not assumed or fabricated.
+        </p>
+      </section>
+
+      <section id="scanners">
+        <div class="section-heading"><div><p class="eyebrow">ANALYSIS CENTER</p><h2>Choose a scan</h2><p class="muted">Select a scanner and submit an asset for analysis.</p></div></div>
+        <div class="cards">
+          <article class="scan-card"><div class="card-top"><span class="card-icon purple">▤</span><span class="tag">ARCHIVE</span></div><h3>ZIP Analyzer</h3><p>Inspect ZIP archives for unsafe paths and archive-related risks.</p><form data-kind="zip"><label>ZIP archive</label><input type="file" name="file" accept=".zip,application/zip" required><button>Analyze ZIP <span>→</span></button></form></article>
+          <article class="scan-card"><div class="card-top"><span class="card-icon purple">▥</span><span class="tag">PROJECT</span></div><h3>Project Readiness Analyzer</h3><p>Inventory project files, languages, manifests, startup files and possible secrets.</p><form data-kind="project"><label>Project ZIP file</label><input type="file" name="file" accept=".zip,application/zip" required><button>Analyze project <span>→</span></button></form></article>
+          <article class="scan-card"><div class="card-top"><span class="card-icon cyan">{ }</span><span class="tag">SOURCE</span></div><h3>Source Code</h3><p>Submit a source file for static code analysis.</p><form data-kind="code"><label>Source file (max 2 MB)</label><input type="file" name="file" required><button>Analyze code <span>→</span></button></form></article>
+          <article class="scan-card"><div class="card-top"><span class="card-icon green">◎</span><span class="tag">WEB</span></div><h3>Website URL</h3><p>Inspect a website URL using the web scanner.</p><form data-kind="url"><label>Website URL</label><input name="url" type="url" placeholder="https://example.com" required><button>Scan website <span>→</span></button></form></article>
+          <article class="scan-card"><div class="card-top"><span class="card-icon blue">◉</span><span class="tag">CONTAINER</span></div><h3>Container Image</h3><p>Submit an image reference for analysis.</p><form data-kind="image"><label>Image reference</label><input name="image" placeholder="nginx:latest" required><button>Scan image <span>→</span></button></form></article>
+          <article class="scan-card"><div class="card-top"><span class="card-icon orange">⌘</span><span class="tag">INFRASTRUCTURE</span></div><h3>Terraform</h3><p>Review Terraform and variable configuration files.</p><form data-kind="terraform"><label>Terraform file (.tf / .tfvars)</label><input type="file" name="file" accept=".tf,.tfvars" required><button>Scan Terraform <span>→</span></button></form></article>
+
+          <article class="scan-card">
+            <div class="card-top"><span class="card-icon blue">⬡</span><span class="tag">TRIVY ACTIVE</span></div>
+            <h3>Trivy Security</h3>
+            <p>Scan container images for vulnerabilities, misconfigurations and exposed secrets.</p>
+            <form data-kind="image">
+              <label>Container image</label>
+              <input name="image" placeholder="alpine:3.20 or nginx:latest" required>
+              <button type="submit">Scan with Trivy <span>→</span></button>
+            </form>
+          </article>
+          <article class="scan-card">
+            <div class="card-top"><span class="card-icon orange">✓</span><span class="tag">CHECKOV ACTIVE</span></div>
+            <h3>Checkov Infrastructure</h3>
+            <p>Scan Terraform infrastructure files for security misconfigurations and policy violations.</p>
+            <form data-kind="checkov">
+              <label>Terraform file (.tf or .tfvars)</label>
+              <input type="file" name="file" accept=".tf,.tfvars" required>
+              <button type="submit">Scan with Checkov <span>→</span></button>
+            </form>
+          </article>
+          <article class="scan-card">
+            <div class="card-top"><span class="card-icon cyan">{ }</span><span class="tag">ACTIVE</span></div>
+            <h3>Semgrep Code Security</h3>
+            <p>Scan project source files for security patterns and code weaknesses.</p>
+            <form data-kind="semgrep"><label>Project ZIP file</label><input type="file" name="file" accept=".zip" required><button>Scan with Semgrep <span>→</span></button></form>
+          </article>
+          <article class="scan-card">
+            <div class="card-top"><span class="card-icon purple">Py</span><span class="tag">ACTIVE</span></div>
+            <h3>Bandit Python Security</h3>
+            <p>Analyze Python files in a project ZIP for common security weaknesses.</p>
+            <form data-kind="bandit"><label>Project ZIP file</label><input type="file" name="file" accept=".zip" required><button>Scan with Bandit <span>→</span></button></form>
+          </article>
+          <article class="scan-card">
+            <div class="card-top"><span class="card-icon green">K</span><span class="tag">ACTIVE</span></div>
+            <h3>Gitleaks Secret Detection</h3>
+            <p>Scan a connected GitHub repository or upload a project ZIP.</p>
+            <div class="github-gitleaks">
+              <label for="gitleaks-repository">GitHub repository</label>
+              <select id="gitleaks-repository">
+                <option value="">Loading repositories...</option>
+              </select>
+              <label for="gitleaks-branch">Branch</label>
+              <input id="gitleaks-branch" type="text" value="main" placeholder="main">
+              <button type="button" id="github-gitleaks-scan">Scan GitHub Repository →</button>
+              <p id="github-gitleaks-status">Connect GitHub to load your repositories.</p>
+            </div>
+            <hr>
+            <form data-kind="gitleaks">
+              <label>Or upload a project ZIP file</label>
+              <input type="file" name="file" accept=".zip" required>
+              <button type="submit">Scan ZIP with Gitleaks →</button>
+            </form>
+          </article>
+          <article class="scan-card">
+            <div class="card-top"><span class="card-icon purple">S</span><span class="tag">SONARQUBE ACTIVE</span></div>
+            <h3>SonarQube Analysis</h3>
+            <p>Analyze code quality, bugs, vulnerabilities and security hotspots.</p>
+            <form data-kind="sonarqube">
+              <label>Project ZIP file</label>
+              <input type="file" name="file" accept=".zip,application/zip" required>
+              <button type="submit">Scan with SonarQube <span>→</span></button>
+            </form>
+          </article>
+        </div>
+      </section>
+
+      <section id="results" class="results hidden">
+        <div class="result-heading"><div><p class="eyebrow">ANALYSIS REPORT</p><h2 id="result-title">Result</h2><p id="result-meta" class="muted"></p></div><div class="result-actions"><button type="button" id="copy">Copy JSON</button><button type="button" id="download">Download JSON</button></div></div>
+        <div id="result-summary"></div>
+        <div id="result-body"></div>
+        <details><summary>View raw JSON</summary><pre id="result-json"></pre></details>
+      </section>
+
+      <section id="history">
+        <div class="section-heading history-heading"><div><p class="eyebrow">ACTIVITY</p><h2>Recent scans</h2><p class="muted">Reports saved by this CloudSentinel instance.</p></div><button type="button" id="refresh">↻ Refresh</button></div>
+        <article class="analytics-panel history-activity">
+          <h3>Recent Activities</h3>
+          <p class="muted">Findings recorded by scan date.</p>
+          <div id="trend-chart" class="analytics-chart">
+            <p class="muted">Waiting for scan data…</p>
+          </div>
+        </article>
+        <h3 class="history-list-title">Individual scan reports</h3>
+        <div id="history-list" class="history-cards"><p class="empty">Loading scan history…</p></div>
+      </section>
+      <footer>Static analysis only; results are not a guarantee that an asset is secure.</footer>
+    </main>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/static/app.js?v=7" defer></script>
+</body>
+</html>

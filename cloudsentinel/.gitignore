@@ -5,3 +5,14 @@ data/reports/*
 !data/reports/.gitkeep
 uploads/
 *.pyc
+
+# Local backups and temporary files
+*.bak
+*.before
+*.before-*
+*.original
+app/static.backup/
+backups/
+clear
+data/*.db
+*.bak*
